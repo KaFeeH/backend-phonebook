@@ -1,8 +1,9 @@
+require("dotenv").config();
+const mongoose = require("mongoose");
+const Person = require("./models/person");
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
-
-const persons = require("./data/persons.json");
 const app = express();
 
 app.use(express.json());
@@ -24,50 +25,112 @@ app.use(
 );
 
 const date = new Date();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
-app.get("/api/persons/info", (request, response) => {
-  response.send(
-    `<p>Phonebook has info for ${persons.length} people</p> <p>${date.toString()}</p>`,
-  );
+app.get("/info", (request, response, next) => {
+  Person.find({})
+    .then((result) => {
+      response.send(
+        `<p>Phonebook has info for ${result.length} people</p> <p>${date.toString()}</p>`
+      );
+    })
+    .catch((error) => next(error));
 });
 
-app.get("/api/persons", (request, response) => {
-  response.json(persons);
+app.get("/api/persons", (request, response, next) => {
+  Person.find({})
+    .then((result) => {
+      response.json(result);
+    })
+    .catch((error) => next(error));
 });
 
-app.get("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id);
-  const person = persons.find((p) => p.id === id);
-  if (!person) response.status(404).json({ error: "Person not found" });
-  response.json(person);
+app.get("/api/persons/:id", (request, response, next) => {
+  const id = request.params.id;
+  Person.findById(id)
+    .then((person) => {
+      if (!person) {
+        response.status(404).json({ error: "Person not found" });
+      } else {
+        response.json(person);
+      }
+    })
+    .catch((error) => next(error));
 });
 
-app.post("/api/persons", (request, response) => {
-  const id = Math.floor(Math.random() * 100000000);
+app.post("/api/persons", (request, response, next) => {
+  const person = new Person({
+    name: request.body.name,
+    number: request.body.number,
+  });
 
-  if (!request.body.name || !request.body.number)
-    return response.status(400).json({ error: "name and number are required" });
-
-  if (persons.some((p) => p.name === request.body.name))
-    return response.status(400).json({ error: "name must be unique" });
-
-  if (persons.some((p) => p.number === request.body.number))
-    return response.status(400).json({ error: "number must be unique" });
-
-  const person = { id, ...request.body };
-  persons.push(person);
-  response.json(person);
+  person
+    .save()
+    .then((savedPerson) => {
+      response.json(savedPerson);
+    })
+    .catch((error) => {
+      next(error)});
 });
 
-app.delete("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id);
-  const person = persons.find((p) => p.id === id);
-  if (!person) response.status(404).json({ error: "Person not found" });
-  const index = persons.indexOf(person);
-  persons.splice(index, 1);
-  response.status(204).end();
+app.delete("/api/persons/:id", (request, response, next) => {
+  const id = request.params.id;
+  Person.findByIdAndDelete(id)
+    .then((result) => {
+      if (!result) {
+        response.status(404).json({ error: "Person not found" });
+      } else {
+        response.status(204).end();
+      }
+    })
+    .catch((error) => next(error));
 });
 
-app.listen(PORT);
-console.log("Server running in port", PORT);
+app.put("/api/persons/:id", (request, response, next) => {
+  const id = request.params.id;
+  const updatedData = {
+    name: request.body.name,
+    number: request.body.number,
+  };
+  Person.findByIdAndUpdate(id, updatedData, { new: true, context: "query", runValidators: true })
+    .then((updatedPerson) => {
+      if (!updatedPerson) {
+        response.status(404).json({ error: "Person not found" }).end();
+      } else {
+        response.json(updatedPerson);
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+      next(error)});
+});
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).json({ error: "Unknown endpoint" });
+};
+
+app.use(unknownEndpoint);
+
+const errorHandler = (error, request, response, next) => {
+  console.error("Error:", error.message);
+  switch (error.name) {
+    case "CastError":
+      return response.status(400).json({ error: "Malformatted id" });
+    case "SyntaxError":
+      return response.status(400).json({ error: "Invalid JSON" });
+    case "ValidationError":
+      return response.status(400).json({ error: error.message || "Validation error" });
+    default:
+      return response
+        .status(500)
+        .json({ error: "Internal server error" })
+        .end();
+  }
+  next(error);
+};
+
+app.use(errorHandler);
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
