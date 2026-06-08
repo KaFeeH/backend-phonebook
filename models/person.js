@@ -9,7 +9,7 @@ console.log("Connecting to MongoDB with URI:", url);
 
 mongoose
   .connect(url)
-  .then((result) => {
+  .then(() => {
     console.log("Connected to MongoDB");
   })
   .catch((error) => console.log("Error connecting to MongoDB:", error.message));

@@ -1,5 +1,4 @@
 require("dotenv").config();
-const mongoose = require("mongoose");
 const Person = require("./models/person");
 const express = require("express");
 const morgan = require("morgan");
@@ -123,10 +122,8 @@ const errorHandler = (error, request, response, next) => {
     default:
       return response
         .status(500)
-        .json({ error: "Internal server error" })
-        .end();
+        .json({ error: "Internal server error" });
   }
-  next(error);
 };
 
 app.use(errorHandler);
