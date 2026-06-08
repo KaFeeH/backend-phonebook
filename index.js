@@ -18,15 +18,15 @@ app.use(
       "-",
       tokens["response-time"](req, res),
       "ms",
-      JSON.stringify(req.body),
+      JSON.stringify(req.body) || "",
     ].join(" ");
   }),
 );
 
-const date = new Date();
 const PORT = process.env.PORT || 3001;
 
 app.get("/info", (request, response, next) => {
+  const date = new Date();
   Person.find({})
     .then((result) => {
       response.send(
@@ -110,7 +110,7 @@ const unknownEndpoint = (request, response) => {
 
 app.use(unknownEndpoint);
 
-const errorHandler = (error, request, response, next) => {
+const errorHandler = (error, request, response, _next) => {
   console.error("Error:", error.message);
   switch (error.name) {
     case "CastError":
