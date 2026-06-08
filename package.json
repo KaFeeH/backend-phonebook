@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,10 @@
     "mongoose": "^9.6.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "eslint": "^10.4.1",
+    "globals": "^17.6.0",
     "morgan": "^1.10.1",
     "nodemon": "^3.1.14"
   }
